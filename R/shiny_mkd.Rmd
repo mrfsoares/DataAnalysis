@@ -1,0 +1,77 @@
+---
+title: "MS x SP - Exportações"
+author: "Maria Rafaela Soares"
+date: "2024-04-14"
+output: html_document
+runtime: shiny
+---
+
+```{r packages, include = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(readxl)
+library(shiny)
+library(gridExtra)
+library(plotly)
+library(DT)
+
+# DADOS
+df <- readxl::read_xlsx('ms_sp.xlsx', sheet='Resultado')
+
+DT::renderDataTable(df)
+```
+
+```{r render-data, echo = FALSE}
+# DADOS
+df <- readxl::read_xlsx('ms_sp.xlsx', sheet='Resultado') %>% 
+  mutate(`Valor FOB (US$)` = `Valor FOB (US$)`*0.000001,
+         `Quilograma Líquido` = `Quilograma Líquido`*0.000001) %>% 
+  rename(`Valor FOB (US$ milhões)` = `Valor FOB (US$)`,
+         `Quilograma Líquido (milhões)` = `Quilograma Líquido`)
+
+DT::renderDataTable(df)
+```
+
+```{r plot-options, echo = FALSE}
+selectInput(inputId = 'UF', 
+            label = 'UF',
+            choices = tail(names(df), -2),
+            width = "400px")
+
+sliderInput(inputId = 'Ano', 
+            label = 'Ano',
+            min = min(df$Ano), 
+            max = max(df$Ano),
+            value = c(min(df$Ano), max(df$Ano)),
+            width = "400px")
+
+```
+
+```{r user-plot, echo = FALSE}
+
+# Função para filtrar o conjunto de dados com base no intervalo de anos selecionado
+df2 <- reactive({
+  subset(df, Ano >= input$Ano[1] & Ano <= input$Ano[2])
+}) 
+
+renderPlotly({
+  ggplotly(ggplot(df2(), aes(x = factor(Ano), y = !!sym(input$UF), fill = `UF do Produto`)) + 
+             geom_col(position = 'dodge') +
+             labs(x = "", 
+                  y = '', 
+                  title = 'Valor das Exprtações',
+                  subtitle = 'São Paulo x Mato Grosso do Sul') +
+             theme_minimal() 
+  ) %>% 
+    layout(legend = list(orientation = "h", x = 0.35, title = ""),
+           annotations = list(
+             x = 0.95, y = -0.2,
+             xref = "paper", yref = "paper",
+             text = "<b>Fonte:</b> Comex Stat",
+             showarrow = FALSE,
+             font = list(size = 10)
+             )
+           )
+})
+
+```
