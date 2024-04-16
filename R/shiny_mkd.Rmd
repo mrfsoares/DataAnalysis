@@ -14,11 +14,6 @@ library(shiny)
 library(gridExtra)
 library(plotly)
 library(DT)
-
-# DADOS
-df <- readxl::read_xlsx('ms_sp.xlsx', sheet='Resultado')
-
-DT::renderDataTable(df)
 ```
 
 ```{r render-data, echo = FALSE}
